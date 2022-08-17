@@ -1,42 +1,55 @@
-import React, { useState } from "react";
+import axios from "axios";
+import {  useState } from "react";
+import { GEO_API_URL, QWeatherApiKey } from "../../api";
 import { AsyncPaginate } from "react-select-async-paginate";
-import { geoApiOptions, GEO_API_URL } from "../../api";
-
 const Search = ({ onSearchChange }) => {
-  const [search, setSearch] = useState(null);
+	const [search, setSearch] = useState("");
 
-  const loadOptions = (inputValue) => {
-    return fetch(
-      `${GEO_API_URL}/cities?minPopulation=1000000&namePrefix=${inputValue}`,
-      geoApiOptions
-    )
-      .then((response) => response.json())
-      .then((response) => {
-        return {
-          options: response.data.map((city) => {
-            return {
-              value: `${city.latitude} ${city.longitude}`,
-              label: `${city.name}, ${city.countryCode}`,
-            };
-          }),
-        };
-      });
-  };
+	const loadOptions = (inputValue) => {
+		console.log(inputValue);
+		return (
+			inputValue &&
+			axios({
+				method: "get",
+				url: GEO_API_URL,
+				params: {
+					location: inputValue,
+					key: QWeatherApiKey,
+				},
+			}).then((res) => {
+                console.log('trigger')
+				return {
+					options: res?.data.location.map((city) => {
+						return {
+							value: `${city.lat} ${city.lon}`,
+							label: `${city.adm2},${city.country},${city.adm1}`,
+						};
+					}),
+				};
+			})
+		);
+	};
 
-  const handleOnChange = (searchData) => {
-    setSearch(searchData);
-    onSearchChange(searchData);
-  };
+	const handleOnChange = (searchData) => {
+		console.log(searchData);
+		setSearch(searchData);
+        onSearchChange(searchData)
+	};
 
-  return (
-    <AsyncPaginate
-      placeholder="Search for city"
-      debounceTimeout={600}
-      value={search}
-      onChange={handleOnChange}
-      loadOptions={loadOptions}
-    />
-  );
+    const handleOnFocus=()=>{
+        setSearch('')
+    }
+
+	return (
+		<AsyncPaginate
+			placeholder="Search for city"
+			debounceTimeout={600}
+			value={search}
+			onChange={handleOnChange}
+			loadOptions={loadOptions}
+            onFocus={handleOnFocus}
+		/>
+	);
 };
 
 export default Search;
